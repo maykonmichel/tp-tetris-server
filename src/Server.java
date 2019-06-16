@@ -1,11 +1,13 @@
-import java.net.*;
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Server {
-    private ServerSocket serverSocket;
     private static final int port = 44455;
-    private List<Connection> players;
+    private static ServerSocket serverSocket;
+    private static List<Player> players;
 
     private Server() {
         System.out.println("Starting server...");
@@ -18,15 +20,35 @@ public class Server {
         }
     }
 
-    private void start() {
+    static void triggerAction(int id, int action) {
+        Player opponent = players.get((id + 1) % 2);
+
+        if (action == Action.GAME_OVER.getValue() || action == Action.STOP.getValue()) {
+            stop();
+        }
+        opponent.triggerAction(action);
+    }
+
+    public static void main(String[] args) {
+        new Server().run();
+    }
+
+    private static void stop() {
+        for (Player player :
+                players) {
+            player.disconnect();
+        }
+    }
+
+    private void run() {
         try {
             System.out.println("Waiting for connections...");
             while (players.size() < 2) {
                 Socket acceptSocket = serverSocket.accept();
-                players.add(new Connection(players.size() + 1, acceptSocket));
+                players.add(new Player(players.size() + 1, acceptSocket));
             }
             System.out.println("2 players connected. Closing server to new connections.");
-            for (Connection player : players) {
+            for (Player player : players) {
                 new Thread(player).start();
             }
         } catch (IOException e) {
@@ -34,8 +56,18 @@ public class Server {
         }
     }
 
-    public static void main(String[] args) {
-        Server server = new Server();
-        server.start();
+    private enum Action {
+        GAME_OVER(5),
+        STOP(6);
+
+        private int value;
+
+        Action(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
     }
 }
