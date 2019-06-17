@@ -8,18 +8,22 @@ public class Player implements Runnable {
     private Scanner scanner;
     private PrintStream printStream;
     private boolean running;
-    private int id;
+    private String name;
 
-    Player(int id, Socket socket) {
-        this.id = id;
+    Player(Socket socket) {
         this.socket = socket;
         try {
             scanner = new Scanner(socket.getInputStream());
             printStream = new PrintStream(socket.getOutputStream());
-            System.out.println("Player " + id + " connected.");
+            name = scanner.nextLine();
+            System.out.println("Player " + name + " connected.");
         } catch (IOException e) {
-            System.out.println("Something went wrong connecting player " + id + ": " + e.getMessage());
+            System.out.println("Something went wrong connecting player: " + e.getMessage());
         }
+    }
+
+    String getName() {
+        return name;
     }
 
     void disconnect() {
@@ -28,9 +32,9 @@ public class Player implements Runnable {
         printStream.close();
         try {
             socket.close();
-            System.out.println("Player " + id + " disconnected.");
+            System.out.println("Player " + name + " disconnected.");
         } catch (IOException e) {
-            System.out.println("Something went wrong disconnecting player " + id + ": " + e.getMessage());
+            System.out.println("Something went wrong disconnecting player " + name + ": " + e.getMessage());
         }
     }
 
@@ -41,8 +45,14 @@ public class Player implements Runnable {
     @Override
     public void run() {
         running = true;
-        while (running) {
-            Server.triggerAction(id, scanner.nextInt());
+        while (scanner.hasNextInt()) {
+            try {
+                Server.triggerAction(name, scanner.nextInt());
+            } catch (Exception e) {
+                disconnect();
+                Server.run();
+            }
         }
+        Server.disconnect(name);
     }
 }

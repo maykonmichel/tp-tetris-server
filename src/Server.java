@@ -9,7 +9,7 @@ public class Server {
     private static ServerSocket serverSocket;
     private static List<Player> players;
 
-    private Server() {
+    private static void start() {
         System.out.println("Starting server...");
         try {
             serverSocket = new ServerSocket(port);
@@ -18,10 +18,37 @@ public class Server {
             System.out.println("Something went wrong on starting server: " + e.getMessage());
             System.exit(1);
         }
+        run();
     }
 
-    static void triggerAction(int id, int action) {
-        Player opponent = players.get((id + 1) % 2);
+    static void run() {
+        try {
+            System.out.println("Waiting for connections...");
+            while (players.size() < 2) {
+                Socket acceptSocket = serverSocket.accept();
+                Player player = new Player(acceptSocket);
+                players.add(player);
+                new Thread(player).start();
+            }
+            System.out.println("2 players connected. Closing server to new connections.");
+        } catch (IOException e) {
+            System.out.println("Something went wrong accepting connections");
+        }
+    }
+
+    private static int getPlayerIndex(String name) {
+        return players.get(0).getName().equals(name) ? 0 : 1;
+    }
+
+    static void disconnect(String name) {
+        int index = getPlayerIndex(name);
+        players.get(index).disconnect();
+        players.remove(index);
+        run();
+    }
+
+    static void triggerAction(String name, int action) {
+        Player opponent = players.get(getPlayerIndex(name));
 
         if (action == Action.GAME_OVER.getValue() || action == Action.STOP.getValue()) {
             stop();
@@ -30,30 +57,15 @@ public class Server {
     }
 
     public static void main(String[] args) {
-        new Server().run();
+        Server.start();
     }
 
     private static void stop() {
-        for (Player player :
-                players) {
+        for (Player player : players) {
             player.disconnect();
         }
-    }
-
-    private void run() {
-        try {
-            System.out.println("Waiting for connections...");
-            while (players.size() < 2) {
-                Socket acceptSocket = serverSocket.accept();
-                players.add(new Player(players.size() + 1, acceptSocket));
-            }
-            System.out.println("2 players connected. Closing server to new connections.");
-            for (Player player : players) {
-                new Thread(player).start();
-            }
-        } catch (IOException e) {
-            System.out.println("Something went wrong accepting connections");
-        }
+        players.clear();
+        run();
     }
 
     private enum Action {
