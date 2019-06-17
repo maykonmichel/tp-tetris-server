@@ -30,6 +30,8 @@ public class Server {
                 players.add(player);
                 new Thread(player).start();
             }
+            players.get(0).setOpponent(players.get(1).getName());
+            players.get(1).setOpponent(players.get(0).getName());
             System.out.println("2 players connected. Closing server to new connections.");
         } catch (IOException e) {
             System.out.println("Something went wrong accepting connections");
@@ -48,6 +50,8 @@ public class Server {
     }
 
     static void triggerAction(String name, int action) {
+        System.out.println("Player " + name + " pressed " + action);
+
         Player opponent = players.get(getPlayerIndex(name));
 
         if (action == Action.GAME_OVER.getValue() || action == Action.STOP.getValue()) {

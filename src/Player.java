@@ -42,6 +42,10 @@ public class Player implements Runnable {
         printStream.println(action);
     }
 
+    void setOpponent(String name) {
+        printStream.println(name);
+    }
+
     @Override
     public void run() {
         running = true;
