@@ -30,8 +30,11 @@ public class Server {
                 players.add(player);
                 new Thread(player).start();
             }
-            players.get(0).setOpponent(players.get(1).getName());
-            players.get(1).setOpponent(players.get(0).getName());
+            int firstShape1 = (int) (Math.random() * 7);
+            int firstShape2 = (int) (Math.random() * 7);
+
+            players.get(0).startGame(players.get(1).getName(), firstShape1, firstShape2);
+            players.get(1).startGame(players.get(0).getName(), firstShape2, firstShape1);
             System.out.println("2 players connected. Closing server to new connections.");
         } catch (IOException e) {
             System.out.println("Something went wrong accepting connections");
@@ -42,6 +45,10 @@ public class Server {
         return players.get(0).getName().equals(name) ? 0 : 1;
     }
 
+    private static Player getOpponent(int index) {
+        return players.get((index + 1) % 2);
+    }
+
     static void disconnect(String name) {
         int index = getPlayerIndex(name);
         players.get(index).disconnect();
@@ -49,15 +56,23 @@ public class Server {
         run();
     }
 
-    static void triggerAction(String name, int action) {
-        System.out.println("Player " + name + " pressed " + action);
+    static void triggerIntAction(Player.Action action, String playerName, int payload) {
+        System.out.println("Player " + playerName + " " + action.toString() + " " + payload);
 
-        Player opponent = players.get(getPlayerIndex(name));
+        Player opponent = getOpponent(getPlayerIndex(playerName));
 
-        if (action == Action.GAME_OVER.getValue() || action == Action.STOP.getValue()) {
-            stop();
-        }
-        opponent.triggerAction(action);
+        opponent.triggerIntAction(action, payload);
+    }
+
+    static void setNextShape(String playerName) {
+        System.out.println("Player " + playerName + " request new shape");
+
+        Player opponent = getOpponent(getPlayerIndex(playerName));
+
+        int index = (int) (Math.random() * 7);
+
+        players.get(getPlayerIndex(playerName)).triggerIntAction(Player.Action.NEXT_SHAPE, index);
+        opponent.triggerIntAction(Player.Action.OPPONENT_NEXT_SHAPE, index);
     }
 
     public static void main(String[] args) {
@@ -70,20 +85,5 @@ public class Server {
         }
         players.clear();
         run();
-    }
-
-    private enum Action {
-        GAME_OVER(5),
-        STOP(6);
-
-        private int value;
-
-        Action(int value) {
-            this.value = value;
-        }
-
-        public int getValue() {
-            return value;
-        }
     }
 }

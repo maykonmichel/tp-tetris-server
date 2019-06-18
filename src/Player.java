@@ -1,3 +1,4 @@
+import javax.swing.*;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.Socket;
@@ -38,25 +39,53 @@ public class Player implements Runnable {
         }
     }
 
-    void triggerAction(int action) {
+    void triggerIntAction(Action action, int payload) {
         printStream.println(action);
+        printStream.println(payload);
     }
 
-    void setOpponent(String name) {
+    void startGame(String name, int firstShape, int firstShapeOpponent) {
+        System.out.println(name + firstShape + firstShapeOpponent);
+
+        printStream.println(Action.OPPONENT_MATCHED.toString());
         printStream.println(name);
+        printStream.println(firstShape);
+        printStream.println(firstShapeOpponent);
     }
 
     @Override
     public void run() {
         running = true;
-        while (scanner.hasNextInt()) {
+        while (scanner.hasNext()) {
             try {
-                Server.triggerAction(name, scanner.nextInt());
+                String action = "";
+                while(action.isEmpty()) action = scanner.nextLine();
+                switch (action) {
+                    case "GET_NEXT_SHAPE":
+                        Server.setNextShape(name);
+                        break;
+                    case "KEY_PRESSED":
+                        Server.triggerIntAction(Action.KEY_PRESSED, name, scanner.nextInt());
+                        break;
+                    case "STOP":
+                        break;
+                    default:
+                        System.out.println(action + "from " + name + " not recognized");
+                        break;
+                }
             } catch (Exception e) {
+                System.out.println("Something went wrong: " + e.getMessage());
                 disconnect();
                 Server.run();
             }
         }
         Server.disconnect(name);
+    }
+
+    enum Action {
+        NEXT_SHAPE,
+        OPPONENT_NEXT_SHAPE,
+        KEY_PRESSED,
+        OPPONENT_MATCHED
     }
 }
